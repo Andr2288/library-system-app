@@ -12,7 +12,7 @@ class HomeController extends BaseController {
     public function index() {
         try {
             $visits = $this->reportModel->updateVisitCounter();
-            $reports = $this->reportModel->getTransportReport();
+            $reports = $this->reportModel->getLibraryReport();
 
             $this->renderView('home/index.php', [
                 'visits' => $visits,

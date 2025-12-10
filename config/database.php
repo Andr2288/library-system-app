@@ -2,8 +2,8 @@
 // Конфігурація підключення до БД
 class Database {
     private $host = 'localhost';
-    private $dbname = 'transport_db';
-    private $username = 'transport_user';
+    private $dbname = 'library_db';
+    private $username = 'library_user';
     private $password = 'password123';
     private $pdo;
 
@@ -11,8 +11,8 @@ class Database {
         if ($this->pdo === null) {
             try {
                 $this->pdo = new PDO(
-                    "mysql:host={$this->host};dbname={$this->dbname};charset=utf8", 
-                    $this->username, 
+                    "mysql:host={$this->host};dbname={$this->dbname};charset=utf8",
+                    $this->username,
                     $this->password
                 );
                 $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);

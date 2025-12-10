@@ -1,33 +1,29 @@
 <?php
 require_once 'config/database.php';
-require_once 'models/VehicleModel.php';
-require_once 'models/DriverModel.php';
-require_once 'models/TripModel.php';
+require_once 'models/BookModel.php';
+require_once 'models/ReaderModel.php';
+require_once 'models/LoanModel.php';
 
-// Отримуємо підключення до БД
 $database = new Database();
 $pdo = $database->getConnection();
 
-$vehicleModel = new VehicleModel();
-$driverModel = new DriverModel();
-$tripModel = new TripModel();
+$bookModel = new BookModel();
+$readerModel = new ReaderModel();
+$loanModel = new LoanModel();
 
 $results = [];
 $searchType = '';
 $searchQuery = '';
 $errors = [];
 
-// Функція валідації
 function validateInput($data) {
     return htmlspecialchars(trim(stripslashes($data)));
 }
 
-// Обробка пошуку
 if ($_POST) {
     $searchType = validateInput($_POST['search_type']);
     $searchQuery = validateInput($_POST['search_query']);
 
-    // Валідація на стороні сервера
     if (empty($searchType)) {
         $errors[] = "Оберіть тип пошуку";
     }
@@ -38,66 +34,85 @@ if ($_POST) {
         $errors[] = "Пошуковий запит має містити мінімум 2 символи";
     }
 
-    // Якщо немає помилок - виконуємо пошук
     if (empty($errors)) {
         try {
             switch ($searchType) {
-                case 'vehicle_plate':
-                    // Пошук автомобіля за номером
-                    if (!preg_match('/^[A-Za-z0-9]+$/', $searchQuery)) {
-                        $errors[] = "Номерний знак може містити лише літери та цифри";
+                case 'book_title':
+                    $stmt = $pdo->prepare("
+                        SELECT b.*, c.name as category_name 
+                        FROM books b 
+                        LEFT JOIN categories c ON b.category_id = c.id 
+                        WHERE b.title LIKE ?
+                    ");
+                    $stmt->execute(["%$searchQuery%"]);
+                    $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                    break;
+
+                case 'book_author':
+                    $stmt = $pdo->prepare("
+                        SELECT b.*, c.name as category_name 
+                        FROM books b 
+                        LEFT JOIN categories c ON b.category_id = c.id 
+                        WHERE b.author LIKE ?
+                    ");
+                    $stmt->execute(["%$searchQuery%"]);
+                    $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                    break;
+
+                case 'book_isbn':
+                    if (!preg_match('/^978-\d{3}-\d{2}-\d{4}-\d$/', $searchQuery)) {
+                        $errors[] = "Невірний формат ISBN. Формат: 978-XXX-XX-XXXX-X";
                     } else {
                         $stmt = $pdo->prepare("
-                            SELECT v.*, d.name as driver_name 
-                            FROM vehicles v 
-                            LEFT JOIN drivers d ON v.driver_id = d.id 
-                            WHERE v.license_plate LIKE ?
+                            SELECT b.*, c.name as category_name 
+                            FROM books b 
+                            LEFT JOIN categories c ON b.category_id = c.id 
+                            WHERE b.isbn LIKE ?
                         ");
                         $stmt->execute(["%$searchQuery%"]);
                         $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     }
                     break;
 
-                case 'vehicle_brand':
-                    // Пошук автомобіля за маркою
+                case 'reader_name':
                     $stmt = $pdo->prepare("
-                        SELECT v.*, d.name as driver_name 
-                        FROM vehicles v 
-                        LEFT JOIN drivers d ON v.driver_id = d.id 
-                        WHERE v.brand LIKE ? OR v.model LIKE ?
-                    ");
-                    $stmt->execute(["%$searchQuery%", "%$searchQuery%"]);
-                    $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                    break;
-
-                case 'driver_name':
-                    // Пошук водія за ім'ям
-                    $stmt = $pdo->prepare("
-                        SELECT d.*, v.license_plate, v.brand, v.model 
-                        FROM drivers d 
-                        LEFT JOIN vehicles v ON d.id = v.driver_id 
-                        WHERE d.name LIKE ?
+                        SELECT r.*, COUNT(l.id) as active_loans
+                        FROM readers r 
+                        LEFT JOIN loans l ON r.id = l.reader_id AND l.status = 'active'
+                        WHERE r.name LIKE ?
+                        GROUP BY r.id
                     ");
                     $stmt->execute(["%$searchQuery%"]);
                     $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     break;
 
-                case 'trip_status':
-                    // Пошук рейсів за статусом
-                    $validStatuses = ['planned', 'active', 'completed'];
+                case 'reader_card':
+                    $stmt = $pdo->prepare("
+                        SELECT r.*, COUNT(l.id) as active_loans
+                        FROM readers r 
+                        LEFT JOIN loans l ON r.id = l.reader_id AND l.status = 'active'
+                        WHERE r.card_number LIKE ?
+                        GROUP BY r.id
+                    ");
+                    $stmt->execute(["%$searchQuery%"]);
+                    $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                    break;
+
+                case 'loan_status':
+                    $validStatuses = ['active', 'returned', 'overdue'];
                     if (!in_array(strtolower($searchQuery), $validStatuses)) {
-                        $errors[] = "Невірний статус. Доступні: planned, active, completed";
+                        $errors[] = "Невірний статус. Доступні: active, returned, overdue";
                     } else {
                         $stmt = $pdo->prepare("
-                            SELECT t.*, v.license_plate, v.brand, v.model, 
-                                   d.name as driver_name, r.name as route_name,
-                                   r.start_point, r.end_point 
-                            FROM trips t
-                            JOIN vehicles v ON t.vehicle_id = v.id
-                            JOIN drivers d ON t.driver_id = d.id  
-                            JOIN routes r ON t.route_id = r.id
-                            WHERE t.status LIKE ?
-                            ORDER BY t.start_time DESC
+                            SELECT l.*, b.title, b.author, b.isbn,
+                                   r.name as reader_name, r.card_number,
+                                   c.name as category_name
+                            FROM loans l
+                            JOIN books b ON l.book_id = b.id
+                            JOIN readers r ON l.reader_id = r.id  
+                            JOIN categories c ON l.category_id = c.id
+                            WHERE l.status LIKE ?
+                            ORDER BY l.loan_date DESC
                         ");
                         $stmt->execute(["%$searchQuery%"]);
                         $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -118,40 +133,40 @@ if ($_POST) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Пошук - Автотранспортне підприємство</title>
+    <title>Пошук - Бібліотечна система</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
         .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
-        .nav { background: #f4f4f4; padding: 10px; margin: 20px 0; border-radius: 4px; }
-        .nav a { margin: 0 15px; text-decoration: none; color: #333; }
-        .nav a:hover, .nav a.active { color: #007bff; font-weight: bold; }
+        .nav { background: #ecf0f1; padding: 10px; margin: 20px 0; border-radius: 4px; }
+        .nav a { margin: 0 15px; text-decoration: none; color: #2c3e50; }
+        .nav a:hover, .nav a.active { color: #3498db; font-weight: bold; }
 
-        .search-form { background: #e9ecef; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        .search-form { background: #e8f5e9; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
         .form-row { display: flex; gap: 15px; align-items: end; margin-bottom: 15px; }
         .form-group { flex: 1; }
         .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
         .form-group select, .form-group input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
-        .form-group select:invalid, .form-group input:invalid { border-color: #dc3545; }
+        .form-group select:invalid, .form-group input:invalid { border-color: #e74c3c; }
 
-        .btn { background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; }
-        .btn:hover { background: #0056b3; }
+        .btn { background: #3498db; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; }
+        .btn:hover { background: #2980b9; }
 
         .error-list { background: #f8d7da; color: #721c24; padding: 10px; border-radius: 4px; margin: 10px 0; }
         .error-list ul { margin: 5px 0 0 20px; }
 
         .results { margin-top: 20px; }
-        .results-header { background: #17a2b8; color: white; padding: 10px; border-radius: 4px 4px 0 0; }
-        .no-results { text-align: center; padding: 40px; color: #6c757d; }
+        .results-header { background: #3498db; color: white; padding: 10px; border-radius: 4px 4px 0 0; }
+        .no-results { text-align: center; padding: 40px; color: #7f8c8d; }
 
         table { width: 100%; border-collapse: collapse; border: 1px solid #ddd; }
         th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        th { background-color: #f8f9fa; font-weight: bold; }
+        th { background-color: #34495e; color: white; font-weight: bold; }
         tr:nth-child(even) { background-color: #f9f9f9; }
 
-        .required { color: #dc3545; }
-        .status-active { color: #28a745; font-weight: bold; }
-        .status-completed { color: #6c757d; }
-        .status-planned { color: #ffc107; font-weight: bold; }
+        .required { color: #e74c3c; }
+        .status-active { color: #27ae60; font-weight: bold; }
+        .status-returned { color: #95a5a6; }
+        .status-overdue { color: #e74c3c; font-weight: bold; }
 
         @media (max-width: 768px) {
             .form-row { flex-direction: column; }
@@ -160,7 +175,6 @@ if ($_POST) {
     </style>
     <script>
         function validateSearchForm() {
-            // Очистити попередні помилки
             const errorDiv = document.getElementById('client-errors');
             errorDiv.innerHTML = '';
 
@@ -168,34 +182,29 @@ if ($_POST) {
             const searchQuery = document.getElementById('search_query').value.trim();
             let errors = [];
 
-            // Валідація типу пошуку
             if (!searchType) {
                 errors.push('Оберіть тип пошуку');
             }
 
-            // Валідація запиту
             if (!searchQuery) {
                 errors.push('Введіть пошуковий запит');
             } else if (searchQuery.length < 2) {
                 errors.push('Пошуковий запит має містити мінімум 2 символи');
             }
 
-            // Специфічна валідація для номерних знаків
-            if (searchType === 'vehicle_plate' && searchQuery) {
-                if (!/^[A-Za-z0-9]+$/.test(searchQuery)) {
-                    errors.push('Номерний знак може містити лише літери та цифри');
+            if (searchType === 'book_isbn' && searchQuery) {
+                if (!/^978-\d{3}-\d{2}-\d{4}-\d$/.test(searchQuery)) {
+                    errors.push('ISBN має формат: 978-XXX-XX-XXXX-X');
                 }
             }
 
-            // Валідація статусу рейсу
-            if (searchType === 'trip_status' && searchQuery) {
-                const validStatuses = ['planned', 'active', 'completed'];
+            if (searchType === 'loan_status' && searchQuery) {
+                const validStatuses = ['active', 'returned', 'overdue'];
                 if (!validStatuses.includes(searchQuery.toLowerCase())) {
-                    errors.push('Статус має бути: planned, active або completed');
+                    errors.push('Статус має бути: active, returned або overdue');
                 }
             }
 
-            // Показати помилки
             if (errors.length > 0) {
                 errorDiv.innerHTML = '<div class="error-list"><strong>Виправте помилки:</strong><ul>' +
                     errors.map(error => '<li>' + error + '</li>').join('') + '</ul></div>';
@@ -210,10 +219,12 @@ if ($_POST) {
             const searchInput = document.getElementById('search_query');
 
             const placeholders = {
-                'vehicle_plate': 'AA1234BB',
-                'vehicle_brand': 'Mercedes, Ford...',
-                'driver_name': 'Іван Петренко',
-                'trip_status': 'active, planned, completed'
+                'book_title': 'Кобзар',
+                'book_author': 'Тарас Шевченко',
+                'book_isbn': '978-966-03-5128-8',
+                'reader_name': 'Олена Петренко',
+                'reader_card': 'RD123456',
+                'loan_status': 'active, returned, overdue'
             };
 
             searchInput.placeholder = placeholders[searchType] || 'Введіть пошуковий запит';
@@ -224,13 +235,13 @@ if ($_POST) {
 <div class="container">
     <div class="nav">
         <a href="index.php">Головна</a>
-        <a href="index.php?controller=vehicles">Автомобілі</a>
-        <a href="index.php?controller=drivers">Водії</a>
-        <a href="index.php?controller=trips">Рейси</a>
+        <a href="index.php?controller=books">Книги</a>
+        <a href="index.php?controller=readers">Читачі</a>
+        <a href="index.php?controller=loans">Видачі</a>
         <a href="search.php" class="active">Пошук</a>
     </div>
 
-    <h1>Пошук по базі даних</h1>
+    <h1>🔍 Пошук по базі даних</h1>
 
     <form method="post" onsubmit="return validateSearchForm()" class="search-form">
         <div class="form-row">
@@ -238,17 +249,23 @@ if ($_POST) {
                 <label for="search_type">Тип пошуку <span class="required">*</span></label>
                 <select id="search_type" name="search_type" onchange="updateSearchPlaceholder()" required>
                     <option value="">Оберіть тип пошуку</option>
-                    <option value="vehicle_plate" <?php echo ($searchType == 'vehicle_plate') ? 'selected' : ''; ?>>
-                        🚗 Автомобіль за номером
+                    <option value="book_title" <?php echo ($searchType == 'book_title') ? 'selected' : ''; ?>>
+                        📚 Книга за назвою
                     </option>
-                    <option value="vehicle_brand" <?php echo ($searchType == 'vehicle_brand') ? 'selected' : ''; ?>>
-                        🏭 Автомобіль за маркою/моделлю
+                    <option value="book_author" <?php echo ($searchType == 'book_author') ? 'selected' : ''; ?>>
+                        ✍️ Книга за автором
                     </option>
-                    <option value="driver_name" <?php echo ($searchType == 'driver_name') ? 'selected' : ''; ?>>
-                        👤 Водій за іменем
+                    <option value="book_isbn" <?php echo ($searchType == 'book_isbn') ? 'selected' : ''; ?>>
+                        🔢 Книга за ISBN
                     </option>
-                    <option value="trip_status" <?php echo ($searchType == 'trip_status') ? 'selected' : ''; ?>>
-                        📋 Рейси за статусом
+                    <option value="reader_name" <?php echo ($searchType == 'reader_name') ? 'selected' : ''; ?>>
+                        👤 Читач за іменем
+                    </option>
+                    <option value="reader_card" <?php echo ($searchType == 'reader_card') ? 'selected' : ''; ?>>
+                        🎫 Читач за номером квитка
+                    </option>
+                    <option value="loan_status" <?php echo ($searchType == 'loan_status') ? 'selected' : ''; ?>>
+                        📋 Видачі за статусом
                     </option>
                 </select>
             </div>
@@ -266,15 +283,13 @@ if ($_POST) {
             </div>
 
             <div class="form-group">
-                <button type="submit" class="btn">Шукати</button>
+                <button type="submit" class="btn">🔍 Шукати</button>
             </div>
         </div>
     </form>
 
-    <!-- Помилки клієнтської валідації -->
     <div id="client-errors"></div>
 
-    <!-- Помилки серверної валідації -->
     <?php if (!empty($errors)): ?>
         <div class="error-list">
             <strong>Помилки:</strong>
@@ -286,7 +301,6 @@ if ($_POST) {
         </div>
     <?php endif; ?>
 
-    <!-- Результати пошуку -->
     <?php if ($_POST && empty($errors)): ?>
         <div class="results">
             <div class="results-header">
@@ -300,94 +314,90 @@ if ($_POST) {
                     <p>Спробуйте змінити критерії пошуку.</p>
                 </div>
             <?php else: ?>
-                <!-- Результати для автомобілів -->
-                <?php if ($searchType == 'vehicle_plate' || $searchType == 'vehicle_brand'): ?>
+                <?php if ($searchType == 'book_title' || $searchType == 'book_author' || $searchType == 'book_isbn'): ?>
                     <table>
                         <tr>
-                            <th>Номер</th>
-                            <th>Марка</th>
-                            <th>Модель</th>
+                            <th>Назва</th>
+                            <th>Автор</th>
+                            <th>ISBN</th>
                             <th>Рік</th>
-                            <th>Вантажність</th>
-                            <th>Водій</th>
+                            <th>Примірників</th>
+                            <th>Доступно</th>
+                            <th>Категорія</th>
                             <th>Статус</th>
                         </tr>
-                        <?php foreach ($results as $vehicle): ?>
+                        <?php foreach ($results as $book): ?>
                             <tr>
-                                <td><strong><?php echo htmlspecialchars($vehicle['license_plate']); ?></strong></td>
-                                <td><?php echo htmlspecialchars($vehicle['brand']); ?></td>
-                                <td><?php echo htmlspecialchars($vehicle['model']); ?></td>
-                                <td><?php echo $vehicle['year']; ?></td>
-                                <td><?php echo $vehicle['capacity']; ?> т</td>
-                                <td><?php echo $vehicle['driver_name'] ? htmlspecialchars($vehicle['driver_name']) : 'Не призначений'; ?></td>
-                                <td><?php echo htmlspecialchars($vehicle['status']); ?></td>
+                                <td><strong><?php echo htmlspecialchars($book['title']); ?></strong></td>
+                                <td><?php echo htmlspecialchars($book['author']); ?></td>
+                                <td><?php echo htmlspecialchars($book['isbn']); ?></td>
+                                <td><?php echo $book['year']; ?></td>
+                                <td><?php echo $book['copies_total']; ?></td>
+                                <td><?php echo $book['copies_available']; ?></td>
+                                <td><?php echo $book['category_name'] ? htmlspecialchars($book['category_name']) : 'Не вказана'; ?></td>
+                                <td><?php echo htmlspecialchars($book['status']); ?></td>
                             </tr>
                         <?php endforeach; ?>
                     </table>
 
-                    <!-- Результати для водіїв -->
-                <?php elseif ($searchType == 'driver_name'): ?>
+                <?php elseif ($searchType == 'reader_name' || $searchType == 'reader_card'): ?>
                     <table>
                         <tr>
                             <th>Ім'я</th>
-                            <th>Посвідчення</th>
+                            <th>Номер квитка</th>
                             <th>Телефон</th>
-                            <th>Досвід</th>
-                            <th>Категорія</th>
-                            <th>Автомобіль</th>
+                            <th>Email</th>
+                            <th>Дата реєстрації</th>
+                            <th>Активних видач</th>
                         </tr>
-                        <?php foreach ($results as $driver): ?>
+                        <?php foreach ($results as $reader): ?>
                             <tr>
-                                <td><strong><?php echo htmlspecialchars($driver['name']); ?></strong></td>
-                                <td><?php echo htmlspecialchars($driver['license_number']); ?></td>
-                                <td><?php echo htmlspecialchars($driver['phone']); ?></td>
-                                <td><?php echo $driver['experience_years']; ?> років</td>
-                                <td><?php echo htmlspecialchars($driver['category']); ?></td>
-                                <td>
-                                    <?php if ($driver['license_plate']): ?>
-                                        <?php echo htmlspecialchars($driver['license_plate'] . ' (' . $driver['brand'] . ' ' . $driver['model'] . ')'); ?>
-                                    <?php else: ?>
-                                        Не призначений
-                                    <?php endif; ?>
-                                </td>
+                                <td><strong><?php echo htmlspecialchars($reader['name']); ?></strong></td>
+                                <td><?php echo htmlspecialchars($reader['card_number']); ?></td>
+                                <td><?php echo htmlspecialchars($reader['phone']); ?></td>
+                                <td><?php echo htmlspecialchars($reader['email']); ?></td>
+                                <td><?php echo htmlspecialchars($reader['registration_date']); ?></td>
+                                <td><?php echo isset($reader['active_loans']) ? $reader['active_loans'] : 0; ?></td>
                             </tr>
                         <?php endforeach; ?>
                     </table>
 
-                    <!-- Результати для рейсів -->
-                <?php elseif ($searchType == 'trip_status'): ?>
+                <?php elseif ($searchType == 'loan_status'): ?>
                     <table>
                         <tr>
-                            <th>Автомобіль</th>
-                            <th>Водій</th>
-                            <th>Маршрут</th>
-                            <th>Час початку</th>
-                            <th>Час закінчення</th>
-                            <th>Паливо</th>
+                            <th>Книга</th>
+                            <th>Читач</th>
+                            <th>Категорія</th>
+                            <th>Дата видачі</th>
+                            <th>Дата повернення</th>
+                            <th>Штраф</th>
                             <th>Статус</th>
                         </tr>
-                        <?php foreach ($results as $trip): ?>
+                        <?php foreach ($results as $loan): ?>
                             <tr>
-                                <td><?php echo htmlspecialchars($trip['license_plate'] . ' (' . $trip['brand'] . ' ' . $trip['model'] . ')'); ?></td>
-                                <td><?php echo htmlspecialchars($trip['driver_name']); ?></td>
                                 <td>
-                                    <strong><?php echo htmlspecialchars($trip['route_name']); ?></strong><br>
-                                    <small><?php echo htmlspecialchars($trip['start_point'] . ' → ' . $trip['end_point']); ?></small>
+                                    <strong><?php echo htmlspecialchars($loan['title']); ?></strong><br>
+                                    <small><?php echo htmlspecialchars($loan['author']); ?></small>
                                 </td>
-                                <td><?php echo $trip['start_time'] ? date('d.m.Y H:i', strtotime($trip['start_time'])) : '-'; ?></td>
-                                <td><?php echo $trip['end_time'] ? date('d.m.Y H:i', strtotime($trip['end_time'])) : '-'; ?></td>
-                                <td><?php echo $trip['fuel_consumed'] ? $trip['fuel_consumed'] . ' л' : '-'; ?></td>
                                 <td>
-                                        <span class="status-<?php echo $trip['status']; ?>">
-                                            <?php
-                                            $statuses = [
-                                                    'planned' => 'Запланований',
-                                                    'active' => 'Активний',
-                                                    'completed' => 'Завершений'
-                                            ];
-                                            echo isset($statuses[$trip['status']]) ? $statuses[$trip['status']] : $trip['status'];
-                                            ?>
-                                        </span>
+                                    <?php echo htmlspecialchars($loan['reader_name']); ?><br>
+                                    <small><?php echo htmlspecialchars($loan['card_number']); ?></small>
+                                </td>
+                                <td><?php echo htmlspecialchars($loan['category_name']); ?></td>
+                                <td><?php echo $loan['loan_date'] ? date('d.m.Y H:i', strtotime($loan['loan_date'])) : '-'; ?></td>
+                                <td><?php echo $loan['return_date'] ? date('d.m.Y H:i', strtotime($loan['return_date'])) : '-'; ?></td>
+                                <td><?php echo $loan['fine_amount'] ? number_format($loan['fine_amount'], 2) . ' грн' : '-'; ?></td>
+                                <td>
+                                    <span class="status-<?php echo $loan['status']; ?>">
+                                        <?php
+                                        $statuses = [
+                                                'active' => 'Активна',
+                                                'returned' => 'Повернена',
+                                                'overdue' => 'Прострочена'
+                                        ];
+                                        echo isset($statuses[$loan['status']]) ? $statuses[$loan['status']] : $loan['status'];
+                                        ?>
+                                    </span>
                                 </td>
                             </tr>
                         <?php endforeach; ?>

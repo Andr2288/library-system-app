@@ -1,19 +1,19 @@
 <?php
 /**
  * Консольний застосунок для управління базою даних
- * Автотранспортне підприємство
+ * Бібліотечна система
  *
  * Використання: php setup.php
  */
 
 class DatabaseSetup {
     private $host = 'localhost';
-    private $dbname = 'transport_db';
+    private $dbname = 'library_db';
     private $rootUser = 'root';
     private $rootPassword = '';
 
     public function run() {
-        echo "\n=== Налаштування бази даних: Автотранспортне підприємство ===\n\n";
+        echo "\n=== Налаштування бази даних: Бібліотечна система ===\n\n";
 
         while (true) {
             $this->showMenu();
@@ -64,9 +64,8 @@ class DatabaseSetup {
     }
 
     private function clearScreen() {
-        // Для Windows та Unix
         system('clear || cls');
-        echo "\n=== Налаштування бази даних: Автотранспортне підприємство ===\n\n";
+        echo "\n=== Налаштування бази даних: Бібліотечна система ===\n\n";
     }
 
     private function getDatabaseConnection($includeDb = true) {
@@ -83,7 +82,6 @@ class DatabaseSetup {
     private function checkDatabase() {
         echo "\n=== Перевірка стану бази даних ===\n";
 
-        // Перевірка підключення до MySQL
         echo "Перевірка підключення до MySQL...";
         $pdo = $this->getDatabaseConnection(false);
         if (!$pdo) {
@@ -93,11 +91,10 @@ class DatabaseSetup {
         }
         echo " ✅ OK\n";
 
-        // Перевірка існування БД
-        echo "Перевірка існування БД transport_db...";
+        echo "Перевірка існування БД library_db...";
         try {
             $stmt = $pdo->prepare("SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = ?");
-            $stmt->execute(['transport_db']);
+            $stmt->execute(['library_db']);
             $dbExists = $stmt->fetch();
 
             if (!$dbExists) {
@@ -106,8 +103,7 @@ class DatabaseSetup {
             }
             echo " ✅ ІСНУЄ\n";
 
-            // Підключення до БД
-            echo "Підключення до БД transport_db...";
+            echo "Підключення до БД library_db...";
             $pdo = $this->getDatabaseConnection(true);
             if (!$pdo) {
                 echo " ❌ ПОМИЛКА\n";
@@ -115,8 +111,7 @@ class DatabaseSetup {
             }
             echo " ✅ OK\n";
 
-            // Перевірка таблиць
-            $tables = ['drivers', 'vehicles', 'routes', 'trips'];
+            $tables = ['readers', 'books', 'categories', 'loans'];
             echo "\nПеревірка таблиць:\n";
 
             foreach ($tables as $table) {
@@ -124,7 +119,6 @@ class DatabaseSetup {
                 $stmt = $pdo->prepare("SHOW TABLES LIKE ?");
                 $stmt->execute([$table]);
                 if ($stmt->fetch()) {
-                    // Кількість записів
                     $stmt = $pdo->prepare("SELECT COUNT(*) as count FROM `$table`");
                     $stmt->execute();
                     $count = $stmt->fetch()['count'];
@@ -134,24 +128,22 @@ class DatabaseSetup {
                 }
             }
 
-            // Перевірка подання
             echo sprintf("  %-12s", "view:");
             $stmt = $pdo->prepare("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.VIEWS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?");
-            $stmt->execute(['transport_db', 'transport_report']);
+            $stmt->execute(['library_db', 'library_report']);
             if ($stmt->fetch()) {
-                echo " ✅ transport_report існує\n";
+                echo " ✅ library_report існує\n";
             } else {
-                echo " ❌ transport_report відсутнє\n";
+                echo " ❌ library_report відсутнє\n";
             }
 
-            // Перевірка користувача
             echo sprintf("  %-12s", "користувач:");
             $stmt = $pdo->prepare("SELECT User FROM mysql.user WHERE User = ?");
-            $stmt->execute(['transport_user']);
+            $stmt->execute(['library_user']);
             if ($stmt->fetch()) {
-                echo " ✅ transport_user існує\n";
+                echo " ✅ library_user існує\n";
             } else {
-                echo " ❌ transport_user відсутній\n";
+                echo " ❌ library_user відсутній\n";
             }
 
         } catch (PDOException $e) {
@@ -176,11 +168,11 @@ class DatabaseSetup {
 
         try {
             echo "Видалення бази даних...";
-            $pdo->exec("DROP DATABASE IF EXISTS transport_db");
+            $pdo->exec("DROP DATABASE IF EXISTS library_db");
             echo " ✅ OK\n";
 
             echo "Видалення користувача...";
-            $pdo->exec("DROP USER IF EXISTS 'transport_user'@'localhost'");
+            $pdo->exec("DROP USER IF EXISTS 'library_user'@'localhost'");
             echo " ✅ OK\n";
 
             echo "\nБазу даних успішно видалено!\n";
@@ -215,7 +207,6 @@ class DatabaseSetup {
 
             echo "Виконання SQL команд...\n";
 
-            // Виконуємо кожну команду окремо
             $commands = explode(';', $sql);
             $executed = 0;
 
@@ -229,10 +220,10 @@ class DatabaseSetup {
 
             echo "  Виконано $executed команд ✅\n";
             echo "\nБазу даних успішно створено!\n";
-            echo "  ✅ База даних transport_db\n";
-            echo "  ✅ Таблиці (drivers, vehicles, routes, trips)\n";
-            echo "  ✅ Користувач transport_user\n";
-            echo "  ✅ Подання transport_report\n";
+            echo "  ✅ База даних library_db\n";
+            echo "  ✅ Таблиці (readers, books, categories, loans)\n";
+            echo "  ✅ Користувач library_user\n";
+            echo "  ✅ Подання library_report\n";
 
         } catch (PDOException $e) {
             echo " ❌ ПОМИЛКА: " . $e->getMessage() . "\n";
@@ -249,7 +240,7 @@ class DatabaseSetup {
 
         $pdo = $this->getDatabaseConnection(true);
         if (!$pdo) {
-            echo "❌ Не вдалося підключитися до БД transport_db\n";
+            echo "❌ Не вдалося підключитися до БД library_db\n";
             echo "Спочатку створіть базу даних (опція 3)\n";
             return;
         }
@@ -265,7 +256,6 @@ class DatabaseSetup {
 
             echo "Додавання тестових даних...\n";
 
-            // Виконуємо кожну команду окремо
             $commands = explode(';', $sql);
             $executed = 0;
 
@@ -279,10 +269,10 @@ class DatabaseSetup {
 
             echo "  Виконано $executed команд ✅\n";
             echo "\nТестові дані успішно додані!\n";
-            echo "  ✅ Водії: 3 записи\n";
-            echo "  ✅ Автомобілі: 3 записи\n";
-            echo "  ✅ Маршрути: 3 записи\n";
-            echo "  ✅ Рейси: 3 записи\n";
+            echo "  ✅ Читачі: 3 записи\n";
+            echo "  ✅ Категорії: 3 записи\n";
+            echo "  ✅ Книги: 3 записи\n";
+            echo "  ✅ Видачі: 3 записи\n";
 
         } catch (PDOException $e) {
             echo " ❌ ПОМИЛКА: " . $e->getMessage() . "\n";
@@ -298,11 +288,10 @@ class DatabaseSetup {
         $this->fillDatabase();
 
         echo "\n🚀 Повна ініціалізація завершена!\n";
-        echo "Тепер можете запускати додаток: http://localhost/transport-system-app/\n";
+        echo "Тепер можете запускати додаток: http://localhost/library-system-app/\n";
     }
 }
 
-// Запуск застосунку
 if (php_sapi_name() === 'cli') {
     $app = new DatabaseSetup();
     $app->run();

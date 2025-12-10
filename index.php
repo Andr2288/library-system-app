@@ -14,25 +14,25 @@ switch ($controller) {
             $homeController->index();
         }
         break;
-    case 'vehicles':
-        require_once 'controllers/VehicleController.php';
-        $vehicleController = new VehicleController();
-        if (method_exists($vehicleController, $action)) {
-            $vehicleController->$action();
+    case 'books':
+        require_once 'controllers/BookController.php';
+        $bookController = new BookController();
+        if (method_exists($bookController, $action)) {
+            $bookController->$action();
         }
         break;
-    case 'drivers':
-        require_once 'controllers/DriverController.php';
-        $driverController = new DriverController();
-        if (method_exists($driverController, $action)) {
-            $driverController->$action();
+    case 'readers':
+        require_once 'controllers/ReaderController.php';
+        $readerController = new ReaderController();
+        if (method_exists($readerController, $action)) {
+            $readerController->$action();
         }
         break;
-    case 'trips':
-        require_once 'controllers/TripController.php';
-        $tripController = new TripController();
-        if (method_exists($tripController, $action)) {
-            $tripController->$action();
+    case 'loans':
+        require_once 'controllers/LoanController.php';
+        $loanController = new LoanController();
+        if (method_exists($loanController, $action)) {
+            $loanController->$action();
         }
         break;
     default:
