@@ -1,25 +1,25 @@
-USE transport_db;
+USE library_db;
 
--- Тестові дані для водіїв
-INSERT INTO drivers (name, license_number, phone, experience_years, category) VALUES
-('Іван Петренко', 'AA123456', '+380501234567', 5, 'C'),
-('Марія Коваленко', 'BB789012', '+380502345678', 3, 'B'),
-('Олександр Шевченко', 'CC345678', '+380503456789', 7, 'C+E');
+-- Тестові дані для читачів
+INSERT INTO readers (name, card_number, phone, email, registration_date) VALUES
+                                                                             ('Олена Петренко', 'RD123456', '+380501234567', 'olena.p@email.com', '2023-01-15'),
+                                                                             ('Андрій Коваленко', 'RD789012', '+380502345678', 'andrii.k@email.com', '2023-03-20'),
+                                                                             ('Марина Шевченко', 'RD345678', '+380503456789', 'maryna.s@email.com', '2023-06-10');
 
--- Тестові дані для автомобілів
-INSERT INTO vehicles (license_plate, brand, model, year, capacity, driver_id, status) VALUES
-('AA1234BB', 'Mercedes', 'Sprinter', 2020, 3.5, 1, 'active'),
-('BC5678DE', 'Ford', 'Transit', 2019, 2.0, 2, 'active'),
-('KA9012MH', 'Volvo', 'FH16', 2021, 40.0, 3, 'active');
+-- Тестові дані для категорій
+INSERT INTO categories (name, description, floor_location) VALUES
+                                                               ('Художня література', 'Романи, повісті, поезія', '2-й поверх, зала А'),
+                                                               ('Наукова література', 'Дослідження, монографії, статті', '3-й поверх, зала Б'),
+                                                               ('Технічна література', 'Підручники, довідники, технічні видання', '3-й поверх, зала В');
 
--- Тестові дані для маршрутів
-INSERT INTO routes (name, start_point, end_point, distance_km, duration_hours) VALUES
-('Київ-Львів', 'м. Київ', 'м. Львів', 540.5, 6.5),
-('Харків-Одеса', 'м. Харків', 'м. Одеса', 580.2, 7.0),
-('Дніпро-Запоріжжя', 'м. Дніпро', 'м. Запоріжжя', 85.3, 1.5);
+-- Тестові дані для книг
+INSERT INTO books (title, author, isbn, year, copies_total, copies_available, category_id, status) VALUES
+                                                                                                       ('Тіні забутих предків', 'Михайло Коцюбинський', '978-966-03-4521-8', 2015, 3, 2, 1, 'available'),
+                                                                                                       ('Кобзар', 'Тарас Шевченко', '978-966-03-5128-8', 2018, 5, 5, 1, 'available'),
+                                                                                                       ('Історія України', 'Михайло Грушевський', '978-966-03-6234-5', 2020, 2, 1, 2, 'available');
 
--- Тестові дані для рейсів
-INSERT INTO trips (vehicle_id, driver_id, route_id, start_time, fuel_consumed, status) VALUES
-(1, 1, 1, '2024-11-26 08:00:00', 45.5, 'active'),
-(2, 2, 3, '2024-11-26 10:30:00', 12.8, 'completed'),
-(3, 3, 2, '2024-11-26 14:00:00', 78.2, 'planned');
+-- Тестові дані для видачі книг
+INSERT INTO loans (book_id, reader_id, category_id, loan_date, return_date, status) VALUES
+                                                                                        (1, 1, 1, '2024-11-20 10:00:00', '2024-12-20 10:00:00', 'active'),
+                                                                                        (3, 2, 2, '2024-11-15 14:30:00', '2024-12-15 14:30:00', 'active'),
+                                                                                        (2, 3, 1, '2024-11-01 09:00:00', '2024-12-01 09:00:00', 'overdue');

@@ -1,73 +1,73 @@
 -- Створення бази даних
-CREATE DATABASE IF NOT EXISTS transport_db;
-USE transport_db;
+CREATE DATABASE IF NOT EXISTS library_db;
+USE library_db;
 
 -- Створення користувача з мінімальними правами
-CREATE USER IF NOT EXISTS 'transport_user'@'localhost' IDENTIFIED BY 'password123';
-GRANT SELECT, INSERT, UPDATE, DELETE ON transport_db.* TO 'transport_user'@'localhost';
+CREATE USER IF NOT EXISTS 'library_user'@'localhost' IDENTIFIED BY 'password123';
+GRANT SELECT, INSERT, UPDATE, DELETE ON library_db.* TO 'library_user'@'localhost';
 FLUSH PRIVILEGES;
 
--- Таблиця водіїв
-CREATE TABLE drivers (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    name VARCHAR(100) NOT NULL,
-    license_number VARCHAR(20) UNIQUE NOT NULL,
-    phone VARCHAR(15),
-    experience_years INT DEFAULT 0,
-    category VARCHAR(10) NOT NULL
+-- Таблиця читачів
+CREATE TABLE readers (
+                         id INT PRIMARY KEY AUTO_INCREMENT,
+                         name VARCHAR(100) NOT NULL,
+                         card_number VARCHAR(20) UNIQUE NOT NULL,
+                         phone VARCHAR(15),
+                         email VARCHAR(100),
+                         registration_date DATE DEFAULT (CURRENT_DATE)
 );
 
--- Таблиця автомобілів  
-CREATE TABLE vehicles (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    license_plate VARCHAR(15) UNIQUE NOT NULL,
-    brand VARCHAR(50) NOT NULL,
-    model VARCHAR(50) NOT NULL,
-    year INT,
-    capacity DECIMAL(5,2),
-    driver_id INT,
-    status ENUM('active', 'repair', 'inactive') DEFAULT 'active',
-    photo VARCHAR(255),
-    FOREIGN KEY (driver_id) REFERENCES drivers(id)
+-- Таблиця категорій книг
+CREATE TABLE categories (
+                            id INT PRIMARY KEY AUTO_INCREMENT,
+                            name VARCHAR(100) NOT NULL,
+                            description TEXT,
+                            floor_location VARCHAR(50)
 );
 
--- Таблиця маршрутів
-CREATE TABLE routes (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    name VARCHAR(100) NOT NULL,
-    start_point VARCHAR(100) NOT NULL,
-    end_point VARCHAR(100) NOT NULL,
-    distance_km DECIMAL(6,2),
-    duration_hours DECIMAL(4,2)
+-- Таблиця книг
+CREATE TABLE books (
+                       id INT PRIMARY KEY AUTO_INCREMENT,
+                       title VARCHAR(200) NOT NULL,
+                       author VARCHAR(100) NOT NULL,
+                       isbn VARCHAR(20) UNIQUE,
+                       year INT,
+                       copies_total INT DEFAULT 1,
+                       copies_available INT DEFAULT 1,
+                       category_id INT,
+                       status ENUM('available', 'damaged', 'lost') DEFAULT 'available',
+                       cover_image VARCHAR(255),
+                       FOREIGN KEY (category_id) REFERENCES categories(id)
 );
 
--- Таблиця рейсів
-CREATE TABLE trips (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    vehicle_id INT NOT NULL,
-    driver_id INT NOT NULL,
-    route_id INT NOT NULL,
-    start_time DATETIME,
-    end_time DATETIME,
-    fuel_consumed DECIMAL(6,2),
-    status ENUM('planned', 'active', 'completed') DEFAULT 'planned',
-    FOREIGN KEY (vehicle_id) REFERENCES vehicles(id),
-    FOREIGN KEY (driver_id) REFERENCES drivers(id),
-    FOREIGN KEY (route_id) REFERENCES routes(id)
+-- Таблиця видачі книг
+CREATE TABLE loans (
+                       id INT PRIMARY KEY AUTO_INCREMENT,
+                       book_id INT NOT NULL,
+                       reader_id INT NOT NULL,
+                       category_id INT NOT NULL,
+                       loan_date DATETIME,
+                       return_date DATETIME,
+                       actual_return_date DATETIME,
+                       fine_amount DECIMAL(6,2),
+                       status ENUM('active', 'returned', 'overdue') DEFAULT 'active',
+                       FOREIGN KEY (book_id) REFERENCES books(id),
+                       FOREIGN KEY (reader_id) REFERENCES readers(id),
+                       FOREIGN KEY (category_id) REFERENCES categories(id)
 );
 
--- Подання з роботи 3
-CREATE VIEW transport_report AS 
-SELECT 
-    v.license_plate,
-    v.brand,
-    v.model,
-    d.name as driver_name,
-    r.name as route_name,
-    t.start_time,
-    t.status as trip_status
-FROM trips t
-JOIN vehicles v ON t.vehicle_id = v.id
-JOIN drivers d ON t.driver_id = d.id  
-JOIN routes r ON t.route_id = r.id
-ORDER BY t.start_time DESC;
+-- Подання для звітів
+CREATE VIEW library_report AS
+SELECT
+    b.title,
+    b.author,
+    b.isbn,
+    r.name as reader_name,
+    c.name as category_name,
+    l.loan_date,
+    l.status as loan_status
+FROM loans l
+         JOIN books b ON l.book_id = b.id
+         JOIN readers r ON l.reader_id = r.id
+         JOIN categories c ON l.category_id = c.id
+ORDER BY l.loan_date DESC;
