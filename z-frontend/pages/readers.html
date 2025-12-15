@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Читачі - Бібліотечна Система</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .sidebar-item {
+            transition: all 0.3s ease;
+        }
+        
+        .sidebar-item:hover {
+            transform: translateX(5px);
+            background: rgba(59, 130, 246, 0.1);
+        }
+        
+        .sidebar-item.active {
+            background: rgba(59, 130, 246, 0.2);
+            border-left: 4px solid #3B82F6;
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-content {
+            animation: slideUp 0.3s ease;
+        }
+        
+        @keyframes slideUp {
+            from { transform: translateY(50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .btn-gradient {
+            background: linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-gradient:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);
+        }
+        
+        .reader-card {
+            transition: all 0.3s ease;
+        }
+        
+        .reader-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    
+    <!-- Sidebar -->
+    <aside class="fixed left-0 top-0 h-full w-64 bg-white shadow-lg z-50">
+        <div class="gradient-bg p-6 text-white">
+            <div class="flex items-center space-x-3">
+                <i class="fas fa-book-open text-3xl"></i>
+                <div>
+                    <h1 class="text-xl font-bold">Бібліотека</h1>
+                    <p class="text-sm opacity-80">Система управління</p>
+                </div>
+            </div>
+        </div>
+        
+        <nav class="p-4">
+            <a href="../index.html" class="sidebar-item flex items-center space-x-3 p-3 rounded-lg mb-2 text-gray-700">
+                <i class="fas fa-home w-5"></i>
+                <span class="font-medium">Dashboard</span>
+            </a>
+            
+            <a href="books.html" class="sidebar-item flex items-center space-x-3 p-3 rounded-lg mb-2 text-gray-700">
+                <i class="fas fa-book w-5"></i>
+                <span class="font-medium">Книги</span>
+            </a>
+            
+            <a href="readers.html" class="sidebar-item active flex items-center space-x-3 p-3 rounded-lg mb-2 text-gray-700">
+                <i class="fas fa-users w-5"></i>
+                <span class="font-medium">Читачі</span>
+            </a>
+            
+            <a href="categories.html" class="sidebar-item flex items-center space-x-3 p-3 rounded-lg mb-2 text-gray-700">
+                <i class="fas fa-folder w-5"></i>
+                <span class="font-medium">Категорії</span>
+            </a>
+            
+            <a href="loans.html" class="sidebar-item flex items-center space-x-3 p-3 rounded-lg mb-2 text-gray-700">
+                <i class="fas fa-exchange-alt w-5"></i>
+                <span class="font-medium">Видачі</span>
+            </a>
+            
+            <div class="mt-8 pt-4 border-t border-gray-200">
+                <a href="#" class="sidebar-item flex items-center space-x-3 p-3 rounded-lg text-gray-700">
+                    <i class="fas fa-cog w-5"></i>
+                    <span class="font-medium">Налаштування</span>
+                </a>
+            </div>
+        </nav>
+    </aside>
+    
+    <!-- Main Content -->
+    <main class="ml-64 p-8">
+        <!-- Header -->
+        <header class="mb-8 fade-in flex justify-between items-center">
+            <div>
+                <h2 class="text-3xl font-bold text-gray-800 mb-2">Читачі</h2>
+                <p class="text-gray-600">Управління читацькою базою</p>
+            </div>
+            <button onclick="openModal('create')" class="btn-gradient text-white px-6 py-3 rounded-lg font-medium flex items-center space-x-2">
+                <i class="fas fa-user-plus"></i>
+                <span>Додати читача</span>
+            </button>
+        </header>
+        
+        <!-- Search -->
+        <div class="bg-white rounded-xl shadow-md p-6 mb-6 fade-in">
+            <div class="relative">
+                <input type="text" id="searchInput" placeholder="Пошук за ім'ям, номером картки або email..." 
+                    class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                <i class="fas fa-search absolute left-3 top-4 text-gray-400"></i>
+            </div>
+        </div>
+        
+        <!-- Readers Grid -->
+        <div id="readersGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 fade-in">
+            <!-- Loading state -->
+            <div class="col-span-full flex justify-center items-center py-12">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Modal for Create/Edit Reader -->
+    <div id="readerModal" class="modal">
+        <div class="modal-content bg-white rounded-xl shadow-2xl max-w-2xl w-full mx-4">
+            <div class="gradient-bg text-white p-6 rounded-t-xl">
+                <h3 id="modalTitle" class="text-2xl font-bold">Додати читача</h3>
+            </div>
+            
+            <form id="readerForm" class="p-6 space-y-4">
+                <input type="hidden" id="readerId">
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Ім'я *</label>
+                    <input type="text" id="readerName" required
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Номер картки *</label>
+                    <input type="text" id="readerCardNumber" required placeholder="RD123456"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <p class="text-xs text-gray-500 mt-1">Формат: RD + 6 цифр (наприклад, RD123456)</p>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Телефон *</label>
+                    <input type="tel" id="readerPhone" required placeholder="+380501234567"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <p class="text-xs text-gray-500 mt-1">Формат: +380XXXXXXXXX</p>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Email *</label>
+                    <input type="email" id="readerEmail" required
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+                
+                <div class="flex justify-end space-x-3 pt-4 border-t">
+                    <button type="button" onclick="closeModal()" 
+                        class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition">
+                        Скасувати
+                    </button>
+                    <button type="submit" 
+                        class="btn-gradient text-white px-6 py-2 rounded-lg font-medium">
+                        Зберегти
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteModal" class="modal">
+        <div class="modal-content bg-white rounded-xl shadow-2xl max-w-md w-full mx-4">
+            <div class="p-6">
+                <div class="flex items-center justify-center w-12 h-12 mx-auto bg-red-100 rounded-full mb-4">
+                    <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
+                </div>
+                <h3 class="text-xl font-bold text-center text-gray-800 mb-2">Видалити читача?</h3>
+                <p class="text-center text-gray-600 mb-6">Цю дію неможливо скасувати.</p>
+                
+                <div class="flex justify-center space-x-3">
+                    <button onclick="closeDeleteModal()" 
+                        class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition">
+                        Скасувати
+                    </button>
+                    <button onclick="confirmDelete()" 
+                        class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition">
+                        Видалити
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="../js/config.js"></script>
+    <script src="../js/readers.js"></script>
+</body>
+</html>
