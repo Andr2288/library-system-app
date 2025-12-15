@@ -1,19 +1,20 @@
 <?php
 /**
- * Вбудований PHP веб-сервер для бібліотечної системи
+ * Вбудований PHP веб-сервер для бібліотечної системи API
  * Використання: php server.php [порт]
  * За замовчуванням: http://localhost:8000
  */
 
-class LibraryServer {
+class LibraryApiServer {
     private $host = '127.0.0.1';
     private $port = 8000;
-    private $docRoot = __DIR__;
+    private $docRoot;
 
     public function __construct($port = null) {
         if ($port) {
             $this->port = (int)$port;
         }
+        $this->docRoot = dirname(__DIR__); // Корінь проекту
     }
 
     public function start() {
@@ -27,9 +28,12 @@ class LibraryServer {
             __FILE__
         );
 
-        echo "🚀 Запуск сервера...\n";
-        echo "🌐 Сайт доступний: http://{$this->host}:{$this->port}\n";
-        echo "🔍 Пошук: http://{$this->host}:{$this->port}/search.php\n";
+        echo "🚀 Запуск API сервера...\n";
+        echo "🌐 API доступне: http://{$this->host}:{$this->port}/api/\n";
+        echo "📚 Книги: http://{$this->host}:{$this->port}/api/books\n";
+        echo "👥 Читачі: http://{$this->host}:{$this->port}/api/readers\n";
+        echo "📋 Категорії: http://{$this->host}:{$this->port}/api/categories\n";
+        echo "📝 Видачі: http://{$this->host}:{$this->port}/api/loans\n";
         echo "⏹️  Для зупинки натисніть Ctrl+C\n\n";
 
         passthru($command);
@@ -44,7 +48,7 @@ class LibraryServer {
             die("❌ Розширення PDO MySQL не встановлено\n");
         }
 
-        $requiredFiles = ['index.php', 'config/database.php'];
+        $requiredFiles = ['api/index.php', 'config/database.php'];
         foreach ($requiredFiles as $file) {
             if (!file_exists($file)) {
                 die("❌ Файл $file не знайдено\n");
@@ -55,23 +59,36 @@ class LibraryServer {
     }
 
     public static function handleRequest($uri, $query) {
-        if (self::isStaticFile($uri)) {
-            return false;
-        }
-
+        // Якщо це API запит
         if (preg_match('/^\/api\//', $uri)) {
-            self::handleApiRequest($uri, $query);
-            return true;
-        }
-
-        if ($uri === '/search.php') {
             $_GET = array_merge($_GET, $query);
-            require_once 'search.php';
+            require_once 'api/index.php';
             return true;
         }
 
-        $_GET = array_merge($_GET, $query);
-        require_once 'index.php';
+        // Статичні файли
+        if (self::isStaticFile($uri)) {
+            return false; // Дозволити PHP серверу обробити
+        }
+
+        // Головна сторінка - показати API документацію
+        if ($uri === '/' || $uri === '/index.php') {
+            self::showApiDocs();
+            return true;
+        }
+
+        // 404 для всього іншого
+        http_response_code(404);
+        echo json_encode([
+            'error' => 'Not Found',
+            'message' => 'API доступне за адресою /api/',
+            'endpoints' => [
+                'books' => '/api/books',
+                'readers' => '/api/readers',
+                'categories' => '/api/categories',
+                'loans' => '/api/loans'
+            ]
+        ], JSON_UNESCAPED_UNICODE);
         return true;
     }
 
@@ -81,29 +98,67 @@ class LibraryServer {
         return in_array(strtolower($extension), $staticExtensions);
     }
 
-    private static function handleApiRequest($uri, $query) {
-        header('Content-Type: application/json');
+    private static function showApiDocs() {
+        header('Content-Type: text/html; charset=utf-8');
+        echo '<!DOCTYPE html>
+<html>
+<head>
+    <title>Library System API</title>
+    <style>
+        body { font-family: Arial; margin: 40px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .endpoint { background: #f8f9fa; padding: 15px; margin: 10px 0; border-radius: 5px; border-left: 4px solid #007bff; }
+        .method { font-weight: bold; color: #007bff; }
+        a { color: #007bff; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        pre { background: #f1f3f4; padding: 10px; border-radius: 4px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📚 Library System API</h1>
+        <p>Вітаємо в API бібліотечної системи! Нижче доступні endpoints:</p>
 
-        if ($uri === '/api/stats') {
-            $stats = [
-                'status' => 'online',
-                'timestamp' => date('Y-m-d H:i:s'),
-                'server' => 'PHP Built-in Server',
-                'version' => PHP_VERSION,
-                'available_pages' => [
-                    'home' => '/',
-                    'search' => '/search.php',
-                    'books' => '/?controller=books',
-                    'readers' => '/?controller=readers',
-                    'loans' => '/?controller=loans'
-                ]
-            ];
-            echo json_encode($stats, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-            return;
-        }
+        <div class="endpoint">
+            <div class="method">GET</div>
+            <a href="/api/books">/api/books</a> - Список всіх книг
+        </div>
 
-        http_response_code(404);
-        echo json_encode(['error' => 'API endpoint not found'], JSON_UNESCAPED_UNICODE);
+        <div class="endpoint">
+            <div class="method">GET</div>
+            <a href="/api/readers">/api/readers</a> - Список всіх читачів
+        </div>
+
+        <div class="endpoint">
+            <div class="method">GET</div>
+            <a href="/api/categories">/api/categories</a> - Список всіх категорій
+        </div>
+
+        <div class="endpoint">
+            <div class="method">GET</div>
+            <a href="/api/loans">/api/loans</a> - Список всіх видач
+        </div>
+
+        <div class="endpoint">
+            <div class="method">GET</div>
+            <a href="/api/loans/active">/api/loans/active</a> - Активні видачі
+        </div>
+
+        <div class="endpoint">
+            <div class="method">GET</div>
+            <a href="/api/loans/overdue">/api/loans/overdue</a> - Прострочені видачі
+        </div>
+
+        <h3>💡 Приклад використання:</h3>
+        <pre>fetch("/api/books")
+  .then(response => response.json())
+  .then(data => console.log(data));</pre>
+
+        <p><strong>Документація:</strong> Повна API документація доступна в файлі README.md</p>
+        <p><strong>Тести:</strong> Імпортуйте Library_API_Tests.postman_collection.json у Postman</p>
+    </div>
+</body>
+</html>';
     }
 }
 
@@ -113,12 +168,12 @@ if (php_sapi_name() === 'cli-server') {
     $queryString = isset($_SERVER['QUERY_STRING']) ? $_SERVER['QUERY_STRING'] : '';
     parse_str($queryString, $query);
 
-    return LibraryServer::handleRequest($uri, $query);
+    return LibraryApiServer::handleRequest($uri, $query);
 }
 
 if (php_sapi_name() === 'cli') {
     $port = isset($argv[1]) ? $argv[1] : null;
-    $server = new LibraryServer($port);
+    $server = new LibraryApiServer($port);
     $server->start();
 } else {
     echo "Цей скрипт призначений для запуску з командного рядка.\n";

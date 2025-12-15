@@ -1,7 +1,7 @@
 <?php
 require_once 'BaseApiController.php';
-require_once '../models/BookModel.php';
-require_once '../models/CategoryModel.php';
+require_once __DIR__ . '/../../models/BookModel.php';
+require_once __DIR__ . '/../../models/CategoryModel.php';
 
 class BooksApiController extends BaseApiController {
     private $bookModel;

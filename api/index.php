@@ -1,5 +1,6 @@
 <?php
-require_once '../config/database.php';
+$projectRoot = dirname(__DIR__);
+require_once $projectRoot . '/config/database.php';
 
 class ApiRouter {
     private $routes = [];

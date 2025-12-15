@@ -1,9 +1,9 @@
 <?php
 require_once 'BaseApiController.php';
-require_once '../models/LoanModel.php';
-require_once '../models/BookModel.php';
-require_once '../models/ReaderModel.php';
-require_once '../models/CategoryModel.php';
+require_once __DIR__ . '/../../models/LoanModel.php';
+require_once __DIR__ . '/../../models/BookModel.php';
+require_once __DIR__ . '/../../models/ReaderModel.php';
+require_once __DIR__ . '/../../models/CategoryModel.php';
 
 class LoansApiController extends BaseApiController {
     private $loanModel;

@@ -1,6 +1,6 @@
 <?php
 require_once 'BaseApiController.php';
-require_once '../models/CategoryModel.php';
+require_once __DIR__ . '/../../models/CategoryModel.php';
 
 class CategoriesApiController extends BaseApiController {
     private $categoryModel;

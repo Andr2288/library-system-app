@@ -1,6 +1,6 @@
 <?php
 require_once 'BaseApiController.php';
-require_once '../models/ReaderModel.php';
+require_once __DIR__ . '/../../models/ReaderModel.php';
 
 class ReadersApiController extends BaseApiController {
     private $readerModel;
