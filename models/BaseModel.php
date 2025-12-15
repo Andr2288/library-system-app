@@ -24,7 +24,7 @@ class BaseModel {
                 );
                 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             } catch(PDOException $e) {
-                die("Помилка підключення до БД: " . $e->getMessage());
+                die("Database connection error: " . $e->getMessage());
             }
         }
 

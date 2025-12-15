@@ -1,5 +1,4 @@
 <?php
-// Конфігурація підключення до БД
 class Database {
     private $host = 'localhost';
     private $dbname = 'library_db';
@@ -17,14 +16,14 @@ class Database {
                 );
                 $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             } catch(PDOException $e) {
-                die("Помилка підключення: " . $e->getMessage());
+                die("Connection error: " . $e->getMessage());
             }
         }
         return $this->pdo;
     }
 }
 
-// Глобальне підключення для сумісності
+// Global connection for compatibility
 $database = new Database();
 $pdo = $database->getConnection();
 ?>

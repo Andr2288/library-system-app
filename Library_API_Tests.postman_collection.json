@@ -1,0 +1,440 @@
+{
+	"info": {
+		"name": "Library System API - Complete",
+		"description": "Повна API колекція для бібліотечної системи",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8000/api",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "Books API",
+			"item": [
+				{
+					"name": "Get All Books",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/books",
+							"host": ["{{base_url}}"],
+							"path": ["books"]
+						}
+					}
+				},
+				{
+					"name": "Get Book by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/books/1",
+							"host": ["{{base_url}}"],
+							"path": ["books", "1"]
+						}
+					}
+				},
+				{
+					"name": "Create Book",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Тест книга\",\n  \"author\": \"Тест автор\",\n  \"isbn\": \"978-966-03-1234-5\",\n  \"year\": 2024,\n  \"copies_total\": 3,\n  \"copies_available\": 3,\n  \"category_id\": 1,\n  \"status\": \"available\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/books",
+							"host": ["{{base_url}}"],
+							"path": ["books"]
+						}
+					}
+				},
+				{
+					"name": "Update Book",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Оновлена назва\",\n  \"copies_available\": 2\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/books/1",
+							"host": ["{{base_url}}"],
+							"path": ["books", "1"]
+						}
+					}
+				},
+				{
+					"name": "Delete Book",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/books/1",
+							"host": ["{{base_url}}"],
+							"path": ["books", "1"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Readers API",
+			"item": [
+				{
+					"name": "Get All Readers",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/readers",
+							"host": ["{{base_url}}"],
+							"path": ["readers"]
+						}
+					}
+				},
+				{
+					"name": "Get Reader by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/readers/1",
+							"host": ["{{base_url}}"],
+							"path": ["readers", "1"]
+						}
+					}
+				},
+				{
+					"name": "Create Reader",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Іван Петренко\",\n  \"card_number\": \"RD987654\",\n  \"phone\": \"+380501234567\",\n  \"email\": \"ivan@example.com\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/readers",
+							"host": ["{{base_url}}"],
+							"path": ["readers"]
+						}
+					}
+				},
+				{
+					"name": "Update Reader",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"phone\": \"+380509876543\",\n  \"email\": \"new.email@example.com\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/readers/1",
+							"host": ["{{base_url}}"],
+							"path": ["readers", "1"]
+						}
+					}
+				},
+				{
+					"name": "Delete Reader",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/readers/1",
+							"host": ["{{base_url}}"],
+							"path": ["readers", "1"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Categories API",
+			"item": [
+				{
+					"name": "Get All Categories",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/categories",
+							"host": ["{{base_url}}"],
+							"path": ["categories"]
+						}
+					}
+				},
+				{
+					"name": "Get Popular Categories",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/categories/popular?limit=3",
+							"host": ["{{base_url}}"],
+							"path": ["categories", "popular"],
+							"query": [
+								{
+									"key": "limit",
+									"value": "3"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Category by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/categories/1",
+							"host": ["{{base_url}}"],
+							"path": ["categories", "1"]
+						}
+					}
+				},
+				{
+					"name": "Create Category",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Дитяча література\",\n  \"description\": \"Книги для дітей різного віку\",\n  \"floor_location\": \"1-й поверх, зала Г\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/categories",
+							"host": ["{{base_url}}"],
+							"path": ["categories"]
+						}
+					}
+				},
+				{
+					"name": "Update Category",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"description\": \"Оновлений опис категорії\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/categories/1",
+							"host": ["{{base_url}}"],
+							"path": ["categories", "1"]
+						}
+					}
+				},
+				{
+					"name": "Delete Category",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/categories/1",
+							"host": ["{{base_url}}"],
+							"path": ["categories", "1"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Loans API",
+			"item": [
+				{
+					"name": "Get All Loans",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/loans",
+							"host": ["{{base_url}}"],
+							"path": ["loans"]
+						}
+					}
+				},
+				{
+					"name": "Get Active Loans",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/loans/active",
+							"host": ["{{base_url}}"],
+							"path": ["loans", "active"]
+						}
+					}
+				},
+				{
+					"name": "Get Overdue Loans",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/loans/overdue",
+							"host": ["{{base_url}}"],
+							"path": ["loans", "overdue"]
+						}
+					}
+				},
+				{
+					"name": "Get Loan by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/loans/1",
+							"host": ["{{base_url}}"],
+							"path": ["loans", "1"]
+						}
+					}
+				},
+				{
+					"name": "Create Loan",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"book_id\": 1,\n  \"reader_id\": 1,\n  \"category_id\": 1,\n  \"loan_date\": \"2024-12-15 10:00:00\",\n  \"return_date\": \"2025-01-15 10:00:00\",\n  \"status\": \"active\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/loans",
+							"host": ["{{base_url}}"],
+							"path": ["loans"]
+						}
+					}
+				},
+				{
+					"name": "Update Loan",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"returned\",\n  \"actual_return_date\": \"2024-12-20 14:30:00\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/loans/1",
+							"host": ["{{base_url}}"],
+							"path": ["loans", "1"]
+						}
+					}
+				},
+				{
+					"name": "Delete Loan",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/loans/1",
+							"host": ["{{base_url}}"],
+							"path": ["loans", "1"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Error Cases",
+			"item": [
+				{
+					"name": "Book Not Found",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/books/999",
+							"host": ["{{base_url}}"],
+							"path": ["books", "999"]
+						}
+					}
+				},
+				{
+					"name": "Invalid Endpoint",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/invalid",
+							"host": ["{{base_url}}"],
+							"path": ["invalid"]
+						}
+					}
+				},
+				{
+					"name": "Create Book - Validation Error",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"\",\n  \"author\": \"Test\",\n  \"isbn\": \"invalid-isbn\",\n  \"year\": 3000\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/books",
+							"host": ["{{base_url}}"],
+							"path": ["books"]
+						}
+					}
+				}
+			]
+		}
+	]
+}

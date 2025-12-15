@@ -26,11 +26,12 @@ class LoanModel extends BaseModel {
 
     public function getActiveLoans() {
         $stmt = $this->pdo->prepare("
-            SELECT l.*, b.title, r.name as reader_name 
+            SELECT l.*, b.title, r.name as reader_name, r.card_number
             FROM loans l
             JOIN books b ON l.book_id = b.id
             JOIN readers r ON l.reader_id = r.id
             WHERE l.status = 'active'
+            ORDER BY l.loan_date DESC
         ");
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -38,11 +39,12 @@ class LoanModel extends BaseModel {
 
     public function getOverdueLoans() {
         $stmt = $this->pdo->prepare("
-            SELECT l.*, b.title, r.name as reader_name 
+            SELECT l.*, b.title, r.name as reader_name, r.card_number
             FROM loans l
             JOIN books b ON l.book_id = b.id
             JOIN readers r ON l.reader_id = r.id
             WHERE l.status = 'active' AND l.return_date < NOW()
+            ORDER BY l.return_date ASC
         ");
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
