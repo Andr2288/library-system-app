@@ -72,26 +72,21 @@ class LoanController extends BaseController {
                 $errors['category_id'] = 'Оберіть категорію';
             }
 
-            // Перевірка дати видачі
+            // Перевірка дати видачі - тільки чи не порожня
             if (empty($loanDate)) {
                 $errors['loan_date'] = 'Вкажіть дату видачі';
-            } else {
-                $loanDateTime = new DateTime($loanDate);
-
-                $now = new DateTime();
-                $threshold = (clone $now)->modify('+2 minutes');
-
-                if ($loanDateTime > $threshold) {
-                    $errors['loan_date'] = 'Дата видачі не може бути в майбутньому';
-                }
             }
 
             // Перевірка дати повернення
             if ($returnDate && $loanDate) {
-                $loanDateTime = new DateTime($loanDate);
-                $returnDateTime = new DateTime($returnDate);
-                if ($returnDateTime <= $loanDateTime) {
-                    $errors['return_date'] = 'Дата повернення має бути пізніше дати видачі';
+                try {
+                    $loanDateTime = new DateTime($loanDate);
+                    $returnDateTime = new DateTime($returnDate);
+                    if ($returnDateTime <= $loanDateTime) {
+                        $errors['return_date'] = 'Дата повернення має бути пізніше дати видачі';
+                    }
+                } catch (Exception $e) {
+                    $errors['return_date'] = 'Невірний формат дати';
                 }
             }
 
@@ -201,10 +196,14 @@ class LoanController extends BaseController {
             }
 
             if ($returnDate && $loanDate) {
-                $loanDateTime = new DateTime($loanDate);
-                $returnDateTime = new DateTime($returnDate);
-                if ($returnDateTime <= $loanDateTime) {
-                    $errors['return_date'] = 'Дата повернення має бути пізніше дати видачі';
+                try {
+                    $loanDateTime = new DateTime($loanDate);
+                    $returnDateTime = new DateTime($returnDate);
+                    if ($returnDateTime <= $loanDateTime) {
+                        $errors['return_date'] = 'Дата повернення має бути пізніше дати видачі';
+                    }
+                } catch (Exception $e) {
+                    $errors['return_date'] = 'Невірний формат дати';
                 }
             }
 

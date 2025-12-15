@@ -54,18 +54,6 @@
             if (!loanDate) {
                 document.getElementById('loan_date_error').textContent = 'Вкажіть дату видачі';
                 isValid = false;
-            } else {
-                const isEditMode = document.querySelector('input[name="loan_id"]') !== null;
-                if (!isEditMode) {
-                    const loanDateTime = new Date(loanDate);
-                    const now = new Date();
-                    // Додаємо 1 хвилину толерантності для поточного часу
-                    now.setMinutes(now.getMinutes() + 2);
-                    if (loanDateTime > now) {
-                        document.getElementById('loan_date_error').textContent = 'Дата видачі не може бути в майбутньому';
-                        isValid = false;
-                    }
-                }
             }
 
             const returnDate = document.getElementById('return_date').value;
