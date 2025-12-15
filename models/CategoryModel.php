@@ -17,15 +17,21 @@ class CategoryModel extends BaseModel {
     }
 
     public function getPopularCategories($limit = 5) {
+        // Ensure limit is an integer
+        $limit = (int)$limit;
+
         $stmt = $this->pdo->prepare("
-            SELECT c.*, COUNT(l.id) as loans_count 
-            FROM categories c 
-            LEFT JOIN loans l ON c.id = l.category_id 
-            GROUP BY c.id 
-            ORDER BY loans_count DESC 
-            LIMIT ?
+            SELECT c.*, COUNT(l.id) as loans_count
+            FROM categories c
+            LEFT JOIN loans l ON c.id = l.category_id
+            GROUP BY c.id
+            ORDER BY loans_count DESC
+            LIMIT :limit
         ");
-        $stmt->execute([$limit]);
+
+        // Bind as integer
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }

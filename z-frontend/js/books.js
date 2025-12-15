@@ -15,16 +15,16 @@ async function loadData() {
             API.get(API_CONFIG.ENDPOINTS.BOOKS),
             API.get(API_CONFIG.ENDPOINTS.CATEGORIES)
         ]);
-        
+
         allBooks = booksResponse.data;
         allCategories = categoriesResponse.data;
-        
+
         // Populate category selects
         populateCategorySelects();
-        
+
         // Render books table
         renderBooksTable(allBooks);
-        
+
     } catch (error) {
         Utils.showError(error);
     }
@@ -33,24 +33,24 @@ async function loadData() {
 function setupEventListeners() {
     // Search
     document.getElementById('searchInput').addEventListener('input', filterBooks);
-    
+
     // Filters
     document.getElementById('filterCategory').addEventListener('change', filterBooks);
     document.getElementById('filterStatus').addEventListener('change', filterBooks);
-    
+
     // Form submit
     document.getElementById('bookForm').addEventListener('submit', handleFormSubmit);
 }
 
 function populateCategorySelects() {
     const selects = ['filterCategory', 'bookCategory'];
-    
+
     selects.forEach(selectId => {
         const select = document.getElementById(selectId);
-        const options = allCategories.map(cat => 
+        const options = allCategories.map(cat =>
             `<option value="${cat.id}">${cat.name}</option>`
         ).join('');
-        
+
         if (selectId === 'filterCategory') {
             select.innerHTML = '<option value="">Всі категорії</option>' + options;
         } else {
@@ -63,24 +63,24 @@ function filterBooks() {
     const searchTerm = document.getElementById('searchInput').value.toLowerCase();
     const categoryFilter = document.getElementById('filterCategory').value;
     const statusFilter = document.getElementById('filterStatus').value;
-    
+
     const filtered = allBooks.filter(book => {
-        const matchesSearch = book.title.toLowerCase().includes(searchTerm) || 
-                             book.author.toLowerCase().includes(searchTerm) ||
-                             book.isbn.toLowerCase().includes(searchTerm);
-        
+        const matchesSearch = book.title.toLowerCase().includes(searchTerm) ||
+            book.author.toLowerCase().includes(searchTerm) ||
+            book.isbn.toLowerCase().includes(searchTerm);
+
         const matchesCategory = !categoryFilter || book.category_id == categoryFilter;
         const matchesStatus = !statusFilter || book.status === statusFilter;
-        
+
         return matchesSearch && matchesCategory && matchesStatus;
     });
-    
+
     renderBooksTable(filtered);
 }
 
 function renderBooksTable(books) {
     const tbody = document.getElementById('booksTableBody');
-    
+
     if (!books || books.length === 0) {
         tbody.innerHTML = `
             <tr>
@@ -92,20 +92,20 @@ function renderBooksTable(books) {
         `;
         return;
     }
-    
+
     tbody.innerHTML = books.map(book => {
         const statusColors = {
             'available': 'bg-green-100 text-green-800',
             'damaged': 'bg-yellow-100 text-yellow-800',
             'lost': 'bg-red-100 text-red-800'
         };
-        
+
         const statusText = {
             'available': 'Доступна',
             'damaged': 'Пошкоджена',
             'lost': 'Втрачена'
         };
-        
+
         return `
             <tr class="table-row">
                 <td class="px-6 py-4">
@@ -148,11 +148,17 @@ function openModal(mode = 'create', bookId = null) {
     const modal = document.getElementById('bookModal');
     const form = document.getElementById('bookForm');
     const title = document.getElementById('modalTitle');
-    
-    form.reset();
-    
+
+    // Clear previous errors
+    document.querySelectorAll('.error-message').forEach(el => el.remove());
+    document.querySelectorAll('.border-red-500').forEach(el => {
+        el.classList.remove('border-red-500');
+        el.classList.add('border-gray-300');
+    });
+
     if (mode === 'create') {
         title.textContent = 'Додати книгу';
+        form.reset();
         document.getElementById('bookId').value = '';
     } else {
         title.textContent = 'Редагувати книгу';
@@ -169,7 +175,7 @@ function openModal(mode = 'create', bookId = null) {
             document.getElementById('bookStatus').value = book.status;
         }
     }
-    
+
     modal.classList.add('active');
 }
 
@@ -179,7 +185,14 @@ function closeModal() {
 
 async function handleFormSubmit(e) {
     e.preventDefault();
-    
+
+    // Clear previous errors
+    document.querySelectorAll('.error-message').forEach(el => el.remove());
+    document.querySelectorAll('.border-red-500').forEach(el => {
+        el.classList.remove('border-red-500');
+        el.classList.add('border-gray-300');
+    });
+
     const bookId = document.getElementById('bookId').value;
     const data = {
         title: document.getElementById('bookTitle').value,
@@ -191,7 +204,7 @@ async function handleFormSubmit(e) {
         copies_available: parseInt(document.getElementById('bookCopiesAvailable').value),
         status: document.getElementById('bookStatus').value
     };
-    
+
     try {
         if (bookId) {
             // Update
@@ -202,12 +215,48 @@ async function handleFormSubmit(e) {
             await API.post(API_CONFIG.ENDPOINTS.BOOKS, data);
             Utils.showNotification('Книгу успішно додано!');
         }
-        
+
         closeModal();
         await loadData();
-        
+
     } catch (error) {
-        Utils.showError(error);
+        // Check if error has validation errors
+        if (error.errors) {
+            // Display field-specific errors
+            Object.keys(error.errors).forEach(field => {
+                const fieldMap = {
+                    'title': 'bookTitle',
+                    'author': 'bookAuthor',
+                    'isbn': 'bookISBN',
+                    'year': 'bookYear'
+                };
+
+                const inputId = fieldMap[field];
+                if (inputId) {
+                    const input = document.getElementById(inputId);
+                    if (input) {
+                        // Add red border
+                        input.classList.remove('border-gray-300');
+                        input.classList.add('border-red-500');
+
+                        // Add error message
+                        const errorDiv = document.createElement('p');
+                        errorDiv.className = 'error-message text-red-500 text-sm mt-1';
+                        errorDiv.textContent = error.errors[field];
+                        input.parentElement.appendChild(errorDiv);
+                    }
+                }
+            });
+
+            // Show general error at the top
+            const form = document.getElementById('bookForm');
+            const errorAlert = document.createElement('div');
+            errorAlert.className = 'error-message bg-red-50 border border-red-500 text-red-700 px-4 py-3 rounded mb-4';
+            errorAlert.innerHTML = `<strong>Помилка валідації:</strong> Перевірте правильність заповнення полів.`;
+            form.insertBefore(errorAlert, form.firstChild);
+        } else {
+            Utils.showError(error);
+        }
     }
 }
 
@@ -227,7 +276,7 @@ function closeDeleteModal() {
 
 async function confirmDelete() {
     if (!bookToDelete) return;
-    
+
     try {
         await API.delete(`${API_CONFIG.ENDPOINTS.BOOKS}/${bookToDelete}`);
         Utils.showNotification('Книгу успішно видалено!');
